@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHA-256哈希生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色和字体 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        dark: '#1E293B',
+                        light: '#F8FAFC'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            .transition-height {
+                transition: max-height 0.5s ease-in-out;
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen text-dark antialiased">
+    <!-- 顶部导航 -->
+    <header class="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-shield text-primary text-2xl"></i>
+                <h1 class="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    SHA-256哈希生成器
+                </h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                    <i class="fa fa-moon-o text-slate-600"></i>
+                </button>
+                <button id="info-button" class="p-2 rounded-full hover:bg-slate-100 transition-colors">
+                    <i class="fa fa-info-circle text-slate-600"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主要内容区 -->
+    <main class="container mx-auto px-4 py-8 md:py-16">
+        <div class="max-w-4xl mx-auto">
+            <!-- 介绍卡片 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8 transform transition-all duration-300 hover:shadow-xl">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4 text-slate-800">在线生成SHA-256哈希值</h2>
+                <p class="text-slate-600 mb-6">
+                    输入任何文本，立即获取其SHA-256哈希值。SHA-256是一种密码散列函数，可生成固定长度的64个字符哈希值，常用于数据完整性校验和安全应用。
+                </p>
+                
+                <!-- 输入区域 -->
+                <div class="mb-6">
+                    <label for="input-text" class="block text-sm font-medium text-slate-700 mb-2">输入文本:</label>
+                    <div class="relative">
+                        <textarea 
+                            id="input-text" 
+                            class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all outline-none resize-none min-h-[120px]"
+                            placeholder="在此输入要计算哈希值的文本..."></textarea>
+                        <button id="clear-button" class="absolute right-3 bottom-3 text-slate-400 hover:text-slate-600 transition-colors opacity-0 pointer-events-none">
+                            <i class="fa fa-times-circle"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <button 
+                        id="generate-button" 
+                        class="px-6 py-3 bg-primary hover:bg-primary/90 text-white font-medium rounded-lg shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                        <i class="fa fa-calculator"></i>
+                        <span>生成哈希值</span>
+                    </button>
+                    <button 
+                        id="copy-button" 
+                        class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                        <i class="fa fa-copy"></i>
+                        <span>复制哈希值</span>
+                    </button>
+                    <button 
+                        id="sample-button" 
+                        class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg shadow-sm hover:shadow transition-all flex items-center justify-center gap-2">
+                        <i class="fa fa-file-text-o"></i>
+                        <span>示例文本</span>
+                    </button>
+                </div>
+                
+                <!-- 结果区域 -->
+                <div id="result-container" class="mt-8 bg-slate-50 rounded-lg p-0 overflow-hidden max-h-0 transition-height">
+                    <div class="p-4 border-b border-slate-200 bg-slate-100/50">
+                        <h3 class="font-medium text-slate-700 flex items-center gap-2">
+                            <i class="fa fa-key text-primary"></i>
+                            <span>SHA-256哈希值</span>
+                        </h3>
+                    </div>
+                    <div class="p-4">
+                        <div id="hash-result" class="font-mono text-sm md:text-base bg-white p-3 rounded border border-slate-200 break-all"></div>
+                        <div id="copy-notification" class="mt-2 text-sm text-secondary font-medium hidden">
+                            <i class="fa fa-check-circle"></i> 哈希值已复制到剪贴板
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 特性卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa fa-bolt text-primary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">实时计算</h3>
+                    <p class="text-slate-600 text-sm">输入文本后立即生成哈希值，无需等待</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa fa-lock text-secondary text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">本地处理</h3>
+                    <p class="text-slate-600 text-sm">所有计算均在浏览器中完成，您的数据不会上传</p>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
+                        <i class="fa fa-code text-slate-600 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold mb-2">精确算法</h3>
+                    <p class="text-slate-600 text-sm">使用标准加密算法，确保哈希值准确无误</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- 信息模态框 -->
+    <div id="info-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="bg-white rounded-2xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto transform scale-95 transition-transform duration-300">
+            <div class="p-6 border-b border-slate-200 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800">关于SHA-256</h3>
+                <button id="close-modal" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <p class="text-slate-600 mb-4">
+                    SHA-256（安全哈希算法256位）是一种密码散列函数，属于SHA-2系列。它可以将任意大小的输入数据转换为固定长度（256位，即64个十六进制字符）的输出。
+                </p>
+                <h4 class="font-semibold text-slate-800 mb-2">主要特点：</h4>
+                <ul class="list-disc pl-5 text-slate-600 mb-4 space-y-1">
+                    <li>固定输出长度：64个十六进制字符</li>
+                    <li>单向性：无法从哈希值反推原始数据</li>
+                    <li>雪崩效应：输入的微小变化会导致输出的巨大变化</li>
+                    <li>抗碰撞性：难以找到两个不同输入产生相同哈希值</li>
+                </ul>
+                <h4 class="font-semibold text-slate-800 mb-2">常见用途：</h4>
+                <ul class="list-disc pl-5 text-slate-600 space-y-1">
+                    <li>数据完整性校验</li>
+                    <li>密码存储（配合盐值）</li>
+                    <li>数字签名</li>
+                    <li>区块链技术</li>
+                    <li>文件校验和</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 页脚 -->
+    <footer class="bg-white/80 backdrop-blur-md py-6 border-t border-slate-200">
+        <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
+            <p>© 2023 SHA-256哈希生成器 | 一个安全、高效的在线哈希工具</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM元素引用
+        const inputText = document.getElementById('input-text');
+        const generateButton = document.getElementById('generate-button');
+        const clearButton = document.getElementById('clear-button');
+        const copyButton = document.getElementById('copy-button');
+        const sampleButton = document.getElementById('sample-button');
+        const hashResult = document.getElementById('hash-result');
+        const resultContainer = document.getElementById('result-container');
+        const copyNotification = document.getElementById('copy-notification');
+        const themeToggle = document.getElementById('theme-toggle');
+        const infoButton = document.getElementById('info-button');
+        const infoModal = document.getElementById('info-modal');
+        const closeModal = document.getElementById('close-modal');
+        
+        // 检查输入文本是否为空，更新按钮状态
+        function updateButtonStates() {
+            const isEmpty = inputText.value.trim() === '';
+            generateButton.disabled = isEmpty;
+            clearButton.style.opacity = isEmpty ? '0' : '1';
+            clearButton.style.pointerEvents = isEmpty ? 'none' : 'auto';
+        }
+        
+        // 生成SHA-256哈希值
+        async function generateSHA256Hash(text) {
+            // 将文本编码为Uint8Array
+            const encoder = new TextEncoder();
+            const data = encoder.encode(text);
+            
+            // 使用SubtleCrypto API计算SHA-256哈希
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            
+            // 将ArrayBuffer转换为十六进制字符串
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('');
+        }
+        
+        // 显示结果
+        function showResult(hash) {
+            hashResult.textContent = hash;
+            resultContainer.style.maxHeight = '500px';
+            copyButton.disabled = false;
+            
+            // 添加结果出现的动画
+            hashResult.classList.add('animate-pulse');
+            setTimeout(() => {
+                hashResult.classList.remove('animate-pulse');
+            }, 1000);
+        }
+        
+        // 复制到剪贴板
+        function copyToClipboard() {
+            navigator.clipboard.writeText(hashResult.textContent)
+                .then(() => {
+                    // 显示复制成功提示
+                    copyNotification.classList.remove('hidden');
+                    setTimeout(() => {
+                        copyNotification.classList.add('hidden');
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('无法复制文本: ', err);
+                    alert('复制失败，请手动复制');
+                });
+        }
+        
+        // 切换深色/浅色模式
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // 更新主题图标
+            const icon = themeToggle.querySelector('i');
+            if (isDark) {
+                icon.classList.remove('fa-moon-o');
+                icon.classList.add('fa-sun-o');
+                document.body.classList.add('bg-slate-900', 'text-white');
+                document.body.classList.remove('bg-gradient-to-br', 'from-slate-50', 'to-slate-100', 'text-dark');
+            } else {
+                icon.classList.remove('fa-sun-o');
+                icon.classList.add('fa-moon-o');
+                document.body.classList.remove('bg-slate-900', 'text-white');
+                document.body.classList.add('bg-gradient-to-br', 'from-slate-50', 'to-slate-100', 'text-dark');
+            }
+        }
+        
+        // 显示/隐藏信息模态框
+        function toggleInfoModal(show) {
+            if (show) {
+                infoModal.classList.remove('opacity-0', 'pointer-events-none');
+                infoModal.querySelector('div').classList.remove('scale-95');
+                infoModal.querySelector('div').classList.add('scale-100');
+                document.body.style.overflow = 'hidden';
+            } else {
+                infoModal.classList.add('opacity-0', 'pointer-events-none');
+                infoModal.querySelector('div').classList.remove('scale-100');
+                infoModal.querySelector('div').classList.add('scale-95');
+                document.body.style.overflow = '';
+            }
+        }
+        
+        // 事件监听器
+        inputText.addEventListener('input', updateButtonStates);
+        
+        generateButton.addEventListener('click', async () => {
+            const text = inputText.value;
+            generateButton.disabled = true;
+            generateButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i><span>计算中...</span>';
+            
+            try {
+                const hash = await generateSHA256Hash(text);
+                showResult(hash);
+            } catch (error) {
+                console.error('生成哈希值时出错:', error);
+                alert('生成哈希值失败，请重试');
+            } finally {
+                generateButton.disabled = false;
+                generateButton.innerHTML = '<i class="fa fa-calculator"></i><span>生成哈希值</span>';
+            }
+        });
+        
+        clearButton.addEventListener('click', () => {
+            inputText.value = '';
+            resultContainer.style.maxHeight = '0';
+            copyButton.disabled = true;
+            updateButtonStates();
+        });
+        
+        copyButton.addEventListener('click', copyToClipboard);
+        
+        sampleButton.addEventListener('click', () => {
+            inputText.value = '这是一个SHA-256哈希示例文本';
+            updateButtonStates();
+            // 自动生成哈希值
+            generateButton.click();
+        });
+        
+        themeToggle.addEventListener('click', toggleTheme);
+        
+        infoButton.addEventListener('click', () => toggleInfoModal(true));
+        closeModal.addEventListener('click', () => toggleInfoModal(false));
+        
+        // 点击模态框外部关闭
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) {
+                toggleInfoModal(false);
+            }
+        });
+        
+        // 初始更新按钮状态
+        updateButtonStates();
+        
+        // 自动生成示例哈希值
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                sampleButton.click();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
